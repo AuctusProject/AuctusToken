@@ -237,6 +237,8 @@ contract Crowdsale is TokenBasic {
 	uint256 public minPreIcoCap = 500 ether;
 	uint256 public maxIcoCap = 50000 ether;
 	uint256 public minIcoCap = 13000 ether;
+	uint256 public maxIcoGasPrice = 50000000000; // 50 gwei
+	uint256 public maxIcoPurchaseValuePerTime = 100 ether; 
 	uint256 public maxDaysForFinishIcoAfterContractCreation = 110;
 	
 	uint256 public icoStartBlock; 
@@ -354,7 +356,7 @@ contract Crowdsale is TokenBasic {
 		bool isIcoFailed = icoFailed();
 		require(isPreIcoFailed || isIcoFailed);
 		uint256 weiAmount = revokeWeiInvested(msg.sender, isPreIcoFailed);
-		if (!msg.sender.send(weiAmount)) revert();
+		assert(msg.sender.send(weiAmount));
 	}
 	
 	function bounty(address recipient, uint256 amount, uint64 transferableUnixDate) onlyOwner {
@@ -379,6 +381,7 @@ contract Crowdsale is TokenBasic {
 	}
 	
 	function sale() internal {
+		require(tx.gasprice <= maxIcoGasPrice && msg.value <= maxIcoPurchaseValuePerTime);
 		uint256 amount = processPurchase(tokenPriceToOneEther, false);
 		icoWeiRaised += msg.value;
 		Buy(msg.sender, amount);
@@ -559,7 +562,7 @@ contract AuctusProject is Crowdsale, DrainManagement {
 		preIcoCompletedSuccessfully
 	{
 		require(block.number < icoStartBlock); //Only drainable before ICO start
-		if (!ownerAddress.send(this.balance)) revert();
+		assert(ownerAddress.send(this.balance));
 	}
 	
 	function drain() 
@@ -570,7 +573,7 @@ contract AuctusProject is Crowdsale, DrainManagement {
 		if (percentage > 0) {
 			uint256 quantity = icoWeiRaised * percentage / 100;
 			if (quantity > this.balance) quantity = this.balance; //For safe
-			if (!ownerAddress.send(quantity)) revert();
+			assert(ownerAddress.send(quantity));
 		}
 	}
 	
