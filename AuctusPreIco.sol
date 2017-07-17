@@ -3,23 +3,23 @@ pragma solidity ^0.4.11;
 
 
 library SafeMath {
-	function times(uint256 x, uint256 y) internal returns (uint256) {
+	function times( uint256 x, uint256 y) internal returns (uint256) {
 		uint256 z = x * y;
 		assert(x == 0 || (z / x == y));
 		return z;
 	}
 
-	function divided(uint256 x, uint256 y) internal returns (uint256) {
+	function divided( uint256 x, uint256 y) internal returns (uint256) {
 		assert(y != 0);
 		return x / y;
 	}
 
-	function minus(uint256 x, uint256 y) internal returns (uint256) {
+	function minus( uint256 x, uint256 y) internal returns (uint256) {
 		assert(y <= x);
 		return x - y;
 	}
 
-	function plus(uint256 x, uint256 y) internal returns (uint256) {
+	function plus( uint256 x, uint256 y) internal returns (uint256) {
 		uint256 z = x + y;
 		assert(z >= x && z >= y);
 		return z;
@@ -30,14 +30,14 @@ library SafeMath {
 contract AuctusPreICO {
 	using SafeMath for uint256;
 	
-	string public constant name = "Auctus Pre Ico";
-    string public constant symbol = "PAUC";
-    uint8 public constant decimals = 18;
+	function name() constant returns (string) { return "Auctus Pre Ico"; }
+    function symbol() constant returns (string) { return "AGT"; }
+    function decimals() constant returns (uint8) { return 18; }
 	
-	uint256 public tokenPriceToOneEther = 100000;
-	uint256 public minWeiToInvest = 50000000000000000; // 0.05 ether
-	uint64 public preIcoStartBlock = 1502787600; // ~ 2017-08-15 09:00:00 UTC
-	uint64 public preIcoEndBlock = 1503997200; // ~ 2017-08-29 09:00:00 UTC
+	uint256 public tokensPerEther = 100000;
+	uint256 public minWeiToInvest = 0.05 ether; 
+	uint64 public preIcoStartBlock = 0; //TODO:Define Start ~ 2017-08-15 09:00:00 UTC
+	uint64 public preIcoEndBlock = 20000000; //TODO:Define End ~ 2017-08-29 09:00:00 UTC
 	uint256 public maxPreIcoCap = 1500 ether;
 	uint256 public minPreIcoCap = 600 ether;
 	address public owner;
@@ -47,7 +47,7 @@ contract AuctusPreICO {
 	mapping(address => uint256) private invested;
 	
 	uint256 private preIcoWeiRaised = 0;
-	uint256 private amountShared = 0;
+	uint256 private distributedAmount = 0;
 	bool private preIcoHalted = false;
 	bool private bountyFinished = false;
 	address private migrationToken = 0x0;
@@ -55,7 +55,8 @@ contract AuctusPreICO {
 	event Bounty(address indexed recipient, uint256 amount);
 	event PreBuy(address indexed recipient, uint256 amount);
 	event TokenMigration(address indexed recipient, uint256 amount);
-	
+    event Transfer(address indexed from, address indexed to, uint256 value);
+    
 	modifier onlyOwner() {
 		require(msg.sender == owner);
 		_;
@@ -105,32 +106,32 @@ contract AuctusPreICO {
 		owner = msg.sender;
 	}
 	
-	function tokenPrice() constant returns (uint256) {
-		return tokenPriceToOneEther;
+	function tokensPerEther() constant returns (uint256) {
+		return tokensPerEther;
 	}
 	
-	function tokenMaximumPreIcoCap() constant returns (uint256) {
-		return maxPreIcoCap;
+	function maximumPreIcoCap() constant returns (uint256) {
+		return maxPreIcoCap / 1 ether;
 	}
 	
-	function tokenMinimumPreIcoCap() constant returns (uint256) {
-		return minPreIcoCap;
+	function minimumPreIcoCap() constant returns (uint256) {
+		return minPreIcoCap / 1 ether;
 	}
 	
-	function tokenPreIcoStartBlock() constant returns (uint256) {
+	function startBlock() constant returns (uint256) {
 		return preIcoStartBlock;
 	}
 	
-	function tokenPreIcoEndBlock() constant returns (uint256) {
+	function endBlock() constant returns (uint256) {
 		return preIcoEndBlock;
 	}
 	
-	function tokenPreIcoWeiRaised() constant returns (uint256) {
+	function weiRaised() constant returns (uint256) {
 		return preIcoWeiRaised;
 	}
 	
-	function tokenShared() constant returns (uint256) {
-		return amountShared;
+	function tokenDistributed() constant returns (uint256) {
+		return distributedAmount;
 	}
 	
 	function minimumWeiToInvest() constant returns (uint256) {
@@ -159,14 +160,22 @@ contract AuctusPreICO {
 		preIcoNotHalted
 	{		
 		require(msg.value >= minWeiToInvest);
-		uint256 tokenAmount = SafeMath.divided(SafeMath.times(msg.value, tokenPriceToOneEther), (1 ether));
-		balances[msg.sender] = balances[msg.sender].plus(tokenAmount);
-		invested[msg.sender] = invested[msg.sender].plus(msg.value);
-		amountShared = amountShared.plus(tokenAmount);
-		preIcoWeiRaised = preIcoWeiRaised.plus(msg.value);
+		uint256 tokenAmount = SafeMath.times(msg.value, tokensPerEther);
+		balances[msg.sender] = SafeMath.plus(balances[msg.sender], tokenAmount);
+		invested[msg.sender] = SafeMath.plus(invested[msg.sender], msg.value);
+		distributedAmount = SafeMath.plus(distributedAmount,tokenAmount);
+		preIcoWeiRaised = SafeMath.plus(preIcoWeiRaised, msg.value);
+		
 		PreBuy(msg.sender, tokenAmount);
 	}
 	
+	function transfer(address to, uint256 value) returns (bool success) { //ERC20 Token Conpliance - pre ico token is not transferable
+     	require(false);
+		balances[to] = balances[to];
+		value = value;
+		return false;
+    }
+		
 	function revoke()
 		validPayload	
 		preIcoFailed 
@@ -177,7 +186,7 @@ contract AuctusPreICO {
 		balances[msg.sender] = 0;
 		require(msg.sender.send(amount));
 	}
-	
+	//REMOVE
 	function migrate() 
 		validPayload
 		migrationIsDefined
@@ -195,7 +204,7 @@ contract AuctusPreICO {
 		preIcoNotFailed
 	{
 		balances[recipient] = balances[recipient].plus(amount);
-		amountShared = amountShared.plus(amount);
+		distributedAmount = distributedAmount.plus(amount);
 		Bounty(recipient, amount);
 	}
 	
@@ -206,7 +215,7 @@ contract AuctusPreICO {
 	function setPreIcoHalt(bool halted) onlyOwner {
 		preIcoHalted = halted;
 	}
-	
+	//REMOVE
 	function setMigrationToken(address mainToken) onlyOwner {
 		migrationToken = mainToken;
 		bountyFinished = true;
