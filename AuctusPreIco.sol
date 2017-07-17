@@ -8,17 +8,7 @@ library SafeMath {
 		assert(x == 0 || (z / x == y));
 		return z;
 	}
-
-	function divided( uint256 x, uint256 y) internal returns (uint256) {
-		assert(y != 0);
-		return x / y;
-	}
-
-	function minus( uint256 x, uint256 y) internal returns (uint256) {
-		assert(y <= x);
-		return x - y;
-	}
-
+	
 	function plus( uint256 x, uint256 y) internal returns (uint256) {
 		uint256 z = x + y;
 		assert(z >= x && z >= y);
@@ -34,28 +24,21 @@ contract AuctusPreICO {
     function symbol() constant returns (string) { return "AGT"; }
     function decimals() constant returns (uint8) { return 18; }
 	
-	uint256 public tokensPerEther = 100000;
-	uint256 public minWeiToInvest = 0.05 ether; 
+	uint256 public tokensPerEther = 2500;
 	uint64 public preIcoStartBlock = 0; //TODO:Define Start ~ 2017-08-15 09:00:00 UTC
 	uint64 public preIcoEndBlock = 20000000; //TODO:Define End ~ 2017-08-29 09:00:00 UTC
-	uint256 public maxPreIcoCap = 1500 ether;
-	uint256 public minPreIcoCap = 600 ether;
+	uint256 public maxPreIcoCap = 2000 ether;
+	uint256 public minPreIcoCap = 400 ether;
 	address public owner;
 	
 	mapping(address => uint256) public balances;
-	mapping(address => bool) public migrated;
 	mapping(address => uint256) private invested;
 	
 	uint256 private preIcoWeiRaised = 0;
 	uint256 private distributedAmount = 0;
 	bool private preIcoHalted = false;
-	bool private bountyFinished = false;
-	address private migrationToken = 0x0;
 	
-	event Bounty(address indexed recipient, uint256 amount);
 	event PreBuy(address indexed recipient, uint256 amount);
-	event TokenMigration(address indexed recipient, uint256 amount);
-    event Transfer(address indexed from, address indexed to, uint256 value);
     
 	modifier onlyOwner() {
 		require(msg.sender == owner);
@@ -68,32 +51,17 @@ contract AuctusPreICO {
 	}
 	
 	modifier preIcoCompletedSuccessfully() {
-		require(preIcoWeiRaised >= minPreIcoCap && (preIcoWeiRaised >= maxPreIcoCap || block.number > preIcoEndBlock));
-		_;
-	}
+-		require(preIcoWeiRaised >= minPreIcoCap && (preIcoWeiRaised >= maxPreIcoCap || block.number > preIcoEndBlock));
+-		_;
+-	}
 	
 	modifier preIcoFailed() {
-		require(failed());
+		require(preIcoWeiRaised < minPreIcoCap && block.number > preIcoEndBlock);
 		_;
 	}
 	
-	modifier preIcoNotFailed() {
-		require(!failed());
-		_;
-	}
-
 	modifier preIcoNotHalted() {
 		require(!preIcoHalted);
-		_;
-	}
-	
-	modifier bountyIsOpened() {
-		require(!bountyFinished);
-		_;
-	}
-	
-	modifier migrationIsDefined() {
-		require(migrationToken != 0x0);
 		_;
 	}
 	
@@ -134,24 +102,12 @@ contract AuctusPreICO {
 		return distributedAmount;
 	}
 	
-	function minimumWeiToInvest() constant returns (uint256) {
-		return minWeiToInvest;
-	}
-	
 	function preIcoIsHalted() constant returns (bool) {
 		return preIcoHalted;
 	}
 	
-	function ownerBountyIsFinished() constant returns (bool) {
-		return bountyFinished;
-	}
-	
 	function balanceOf(address who) constant returns (uint256) {
 		return balances[who];
-	}
-	
-	function wasMigrated(address who) constant returns (bool) {
-		return migrated[who];
 	}
 	
 	function()
@@ -159,11 +115,10 @@ contract AuctusPreICO {
 		preIcoPeriod 
 		preIcoNotHalted
 	{		
-		require(msg.value >= minWeiToInvest);
 		uint256 tokenAmount = SafeMath.times(msg.value, tokensPerEther);
 		balances[msg.sender] = SafeMath.plus(balances[msg.sender], tokenAmount);
 		invested[msg.sender] = SafeMath.plus(invested[msg.sender], msg.value);
-		distributedAmount = SafeMath.plus(distributedAmount,tokenAmount);
+		distributedAmount = SafeMath.plus(distributedAmount, tokenAmount);
 		preIcoWeiRaised = SafeMath.plus(preIcoWeiRaised, msg.value);
 		
 		PreBuy(msg.sender, tokenAmount);
@@ -186,26 +141,12 @@ contract AuctusPreICO {
 		balances[msg.sender] = 0;
 		require(msg.sender.send(amount));
 	}
-	//REMOVE
-	function migrate() 
-		validPayload
-		migrationIsDefined
+	
+	function drain() 
+		onlyOwner 
 		preIcoCompletedSuccessfully
 	{
-		require(!migrated[msg.sender]);
-		migrated[msg.sender] = true;
-		require(migrationToken.delegatecall(bytes4(sha3("processPreIcoMigration()"))));
-		TokenMigration(msg.sender, balanceOf(msg.sender));
-	}
-	
-	function bounty(address recipient, uint256 amount) 
-		onlyOwner 
-		bountyIsOpened
-		preIcoNotFailed
-	{
-		balances[recipient] = balances[recipient].plus(amount);
-		distributedAmount = distributedAmount.plus(amount);
-		Bounty(recipient, amount);
+		require(msg.sender.send(this.balance));
 	}
 	
 	function transferOwnership(address newOwner) onlyOwner {
@@ -214,14 +155,5 @@ contract AuctusPreICO {
 	
 	function setPreIcoHalt(bool halted) onlyOwner {
 		preIcoHalted = halted;
-	}
-	//REMOVE
-	function setMigrationToken(address mainToken) onlyOwner {
-		migrationToken = mainToken;
-		bountyFinished = true;
-	}
-	
-	function failed() internal returns (bool) {
-		return (preIcoWeiRaised < minPreIcoCap && block.number > preIcoEndBlock);
 	}
 }
