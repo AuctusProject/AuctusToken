@@ -51,9 +51,9 @@ contract AuctusPreICO {
 	}
 	
 	modifier preIcoCompletedSuccessfully() {
--		require(preIcoWeiRaised >= minPreIcoCap && (preIcoWeiRaised >= maxPreIcoCap || block.number > preIcoEndBlock));
--		_;
--	}
+		require(preIcoWeiRaised >= minPreIcoCap && (preIcoWeiRaised >= maxPreIcoCap || block.number > preIcoEndBlock));
+		_;
+	}
 	
 	modifier preIcoFailed() {
 		require(preIcoWeiRaised < minPreIcoCap && block.number > preIcoEndBlock);
