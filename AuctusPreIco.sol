@@ -1,4 +1,4 @@
-//Draft Auctus Pre ICO SC version 0.1
+//Draft Auctus Pre ICO SC version 0.2
 pragma solidity ^0.4.11;
 
 
@@ -20,25 +20,27 @@ library SafeMath {
 contract AuctusPreICO {
 	using SafeMath for uint256;
 	
-	function name() constant returns (string) { return "Auctus Pre Ico"; }
-    function symbol() constant returns (string) { return "AGT"; }
-    function decimals() constant returns (uint8) { return 18; }
+	string public name = "Auctus Pre Ico"; 
+    string public symbol = "AGT";
+    uint8 public decimals = 18;
 	
 	uint256 public tokensPerEther = 2500;
 	uint64 public preIcoStartBlock = 0; //TODO:Define Start ~ 2017-08-15 09:00:00 UTC
-	uint64 public preIcoEndBlock = 20000000; //TODO:Define End ~ 2017-08-29 09:00:00 UTC
+	uint64 public preIcoEndBlock = 20000; //TODO:Define End ~ 2017-08-29 09:00:00 UTC
 	uint256 public maxPreIcoCap = 2000 ether;
 	uint256 public minPreIcoCap = 400 ether;
 	address public owner;
 	
 	mapping(address => uint256) public balances;
-	mapping(address => uint256) private invested;
+	mapping(address => uint256) public invested; 
 	
 	uint256 private preIcoWeiRaised = 0;
 	uint256 private distributedAmount = 0;
+	
 	bool private preIcoHalted = false;
 	
 	event PreBuy(address indexed recipient, uint256 amount);
+	event Transfer(address indexed _from, address indexed _to, uint256 _value);
     
 	modifier onlyOwner() {
 		require(msg.sender == owner);
@@ -95,16 +97,18 @@ contract AuctusPreICO {
 		preIcoPeriod 
 		preIcoNotHalted
 	{		
-		uint256 tokenAmount = SafeMath.times(msg.value, tokensPerEther);
-		balances[msg.sender] = SafeMath.plus(balances[msg.sender], tokenAmount);
-		invested[msg.sender] = SafeMath.plus(invested[msg.sender], msg.value);
-		distributedAmount = SafeMath.plus(distributedAmount, tokenAmount);
-		preIcoWeiRaised = SafeMath.plus(preIcoWeiRaised, msg.value);
+		require(msg.value > 0); 
+		
+		uint256 tokenAmount = msg.value.times(tokensPerEther);
+		balances[msg.sender] = balances[msg.sender].plus(tokenAmount);
+		invested[msg.sender] = invested[msg.sender].plus(msg.value);
+		distributedAmount = distributedAmount.plus(tokenAmount);
+		preIcoWeiRaised = preIcoWeiRaised.plus(msg.value);
 		
 		PreBuy(msg.sender, tokenAmount);
 	}
 	
-	function transfer(address to, uint256 value) returns (bool success) { //ERC20 Token Conpliance - pre ico token is not transferable
+	function transfer(address to, uint256 value) returns (bool success) { //ERC20 Token Compliance - pre ico token is not transferable
      	require(false);
 		balances[to] = balances[to];
 		value = value;
@@ -127,10 +131,6 @@ contract AuctusPreICO {
 		preIcoCompletedSuccessfully
 	{
 		require(msg.sender.send(this.balance));
-	}
-	
-	function transferOwnership(address newOwner) onlyOwner {
-		owner = newOwner;
 	}
 	
 	function setPreIcoHalt(bool halted) onlyOwner {
