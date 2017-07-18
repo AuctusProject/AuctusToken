@@ -3,13 +3,13 @@ pragma solidity ^0.4.11;
 
 
 library SafeMath {
-	function times( uint256 x, uint256 y) internal returns (uint256) {
+	function times(uint256 x, uint256 y) internal returns (uint256) {
 		uint256 z = x * y;
 		assert(x == 0 || (z / x == y));
 		return z;
 	}
 	
-	function plus( uint256 x, uint256 y) internal returns (uint256) {
+	function plus(uint256 x, uint256 y) internal returns (uint256) {
 		uint256 z = x + y;
 		assert(z >= x && z >= y);
 		return z;
@@ -73,27 +73,7 @@ contract AuctusPreICO {
 	function AuctusPreICO() {
 		owner = msg.sender;
 	}
-	
-	function tokensPerEther() constant returns (uint256) {
-		return tokensPerEther;
-	}
-	
-	function maximumPreIcoCap() constant returns (uint256) {
-		return maxPreIcoCap / 1 ether;
-	}
-	
-	function minimumPreIcoCap() constant returns (uint256) {
-		return minPreIcoCap / 1 ether;
-	}
-	
-	function startBlock() constant returns (uint256) {
-		return preIcoStartBlock;
-	}
-	
-	function endBlock() constant returns (uint256) {
-		return preIcoEndBlock;
-	}
-	
+
 	function weiRaised() constant returns (uint256) {
 		return preIcoWeiRaised;
 	}
