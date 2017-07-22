@@ -67,11 +67,6 @@ contract AuctusPreICO {
 		_;
 	}
 	
-	modifier validPayload() { //"Fix for the ERC20 short address attack"
-		require(msg.data.length >= 68);
-		_;
-	}
-	
 	function AuctusPreICO() {
 		owner = msg.sender;
 	}
@@ -115,10 +110,7 @@ contract AuctusPreICO {
 		return false;
     }
 		
-	function revoke()
-		validPayload	
-		preIcoFailed 
-	{
+	function revoke() preIcoFailed {
 		uint256 amount = invested[msg.sender];
 		require(amount > 0);
 		invested[msg.sender] = 0;
