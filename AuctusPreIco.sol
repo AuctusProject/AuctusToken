@@ -1,5 +1,5 @@
 //Draft Auctus Pre ICO SC version 0.2
-pragma solidity ^0.4.11;
+pragma solidity ^0.4.13;
 
 
 library SafeMath {
