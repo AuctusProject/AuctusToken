@@ -309,7 +309,7 @@ contract DistributionManagement is AuctusIco {
 		_;
 	}
 	
-	function TokenDistribution() {
+	function DistributionManagement() {
 		teamDistribution.push(VestedDistribution(86400 * 180, 16)); // 6 months, 25%
 		teamDistribution.push(VestedDistribution(86400 * 360, 16)); // 12 months, more 25%
 		teamDistribution.push(VestedDistribution(86400 * 540, 16)); // 18 months, more 25%
