@@ -76,8 +76,7 @@ contract VestedToken {
 			}
 		}
 		if (!attributed) {
-			balances[recipient][attributionCount].amount = quantity;
-			balances[recipient][attributionCount].useOnlyAfter = transferableAfter;
+			balances[recipient].push(Token(quantity, transferableAfter));
 		}
 	}
 
@@ -195,25 +194,11 @@ contract AuctusIco is Owner {
 	}
 	
 	function AuctusIco() {
-		//First bonus period
-		bonusDistribution[0].period = 86400 * 1; // first day
-		bonusDistribution[0].bonus = 20; // in percentage
-		
-		//Second bonus period
-		bonusDistribution[1].period = 86400 * 3;  
-		bonusDistribution[1].bonus = 12; // in percentage
-		
-		//Third bonus period
-		bonusDistribution[2].period = 86400 * 6;
-		bonusDistribution[2].bonus = 8; // in percentage
-		
-		//Fourth bonus period
-		bonusDistribution[3].period = 86400 * 9;
-		bonusDistribution[3].bonus = 4; // in percentage
-		
-		//Fifth bonus period
-		bonusDistribution[4].period = 86400 * 12;
-		bonusDistribution[4].bonus = 2; // in percentage
+		bonusDistribution.push(Bonus(86400, 16)); // first day, 16%
+		bonusDistribution.push(Bonus(86400 * 3, 12)); // until third day, 12%
+		bonusDistribution.push(Bonus(86400 * 6, 8)); // until sixth day, 8%
+		bonusDistribution.push(Bonus(86400 * 9, 4)); // until ninth day, 4%
+		bonusDistribution.push(Bonus(86400 * 12, 2)); // until twelfth day, 2%
 	}
 	
 	function() 
@@ -325,21 +310,10 @@ contract DistributionManagement is AuctusIco {
 	}
 	
 	function TokenDistribution() {
-		//First vested period
-		teamDistribution[0].period = 86400 * 180; // 6 months
-		teamDistribution[0].percentage = 25; // in percentage
-		
-		//Second vested period
-		teamDistribution[1].period = 86400 * 360; // 12 months
-		teamDistribution[1].percentage = 25; // in percentage
-		
-		//Third vested period
-		teamDistribution[2].period = 86400 * 540; // 18 months
-		teamDistribution[2].percentage = 25; // in percentage
-		
-		//Fourth vested period
-		teamDistribution[3].period = 86400 * 720; // 24 months
-		teamDistribution[3].percentage = 25; // in percentage
+		teamDistribution.push(VestedDistribution(86400 * 180, 16)); // 6 months, 25%
+		teamDistribution.push(VestedDistribution(86400 * 360, 16)); // 12 months, more 25%
+		teamDistribution.push(VestedDistribution(86400 * 540, 16)); // 18 months, more 25%
+		teamDistribution.push(VestedDistribution(86400 * 720, 16)); // 24 months, more 25%
 	}
 	
 	function finishDistribution()
@@ -395,15 +369,13 @@ contract DrainManagement is DistributionManagement {
 	event Drain(address indexed destination, uint256 amount);
 	
 	function DrainManagement() {
-		drainables[0].percentage = drainImmediatePercentage; 
-		drainables[0].useOnlyAfter = 0; 
+		drainables.push(DrainInfo(drainImmediatePercentage, 0)); 
 		
 		uint64 month = (86400 * 30);
 		uint64 vestedPeriod = currentTime() + month;
 		uint256 drainQt = (100 - drainImmediatePercentage) / drainPercentagePerMonth;
 		for(uint256 i = 1; i <= drainQt; i++) {
-			drainables[i].percentage = drainPercentagePerMonth; 
-			drainables[i].useOnlyAfter = vestedPeriod; 
+			drainables.push(DrainInfo(drainPercentagePerMonth, vestedPeriod)); 
 			vestedPeriod = vestedPeriod + month;
 		}
 	}
