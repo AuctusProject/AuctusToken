@@ -25,10 +25,10 @@ contract AuctusPreICO {
     uint8 public decimals = 18;
 	
 	uint256 public tokensPerEther = 2500;
-	uint64 public preIcoStartBlock = 20; //TODO:Define Start ~ 2017-08-15 09:00:00 UTC
+	uint64 public preIcoStartBlock = 10; //TODO:Define Start ~ 2017-08-15 09:00:00 UTC
 	uint64 public preIcoEndBlock = 100; //TODO:Define End ~ 2017-08-29 09:00:00 UTC
-	uint256 public maxPreIcoCap = 2000 ether;
-	uint256 public minPreIcoCap = 400 ether;
+	uint256 public maxPreIcoCap = 30 ether;
+	uint256 public minPreIcoCap = 10 ether;
 	address public owner;
 	
 	mapping(address => uint256) public balances;

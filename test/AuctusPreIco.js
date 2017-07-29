@@ -1,3 +1,8 @@
+// Expected parameters to work
+// uint256 public tokensPerEther = 2500;
+// uint256 public maxPreIcoCap = 40 ether;
+// uint256 public minPreIcoCap = 10 ether;
+
 var AuctusPreIco = artifacts.require("./AuctusPreICO.sol");
 
 contract('AuctusPreICO', function (accounts) {
@@ -11,7 +16,6 @@ contract('AuctusPreICO', function (accounts) {
       var auctusPreIco = instance
       // Pass test if we have an object returned.
       assert.isOk(auctusPreIco)
-      // Tell Mocha move on to the next sequential test.
     })
   })
 
@@ -108,7 +112,7 @@ contract('AuctusPreICO', function (accounts) {
     })
   })
 
-  it("try calling drain function before pre ico end", function () {
+  it("Try calling drain function before pre ico end", function () {
     return AuctusPreIco.deployed().then(function (instance) {
       // send a 5 eth transaction from user test account to contract
       return instance.drain()
@@ -130,7 +134,7 @@ contract('AuctusPreICO', function (accounts) {
     return AuctusPreIco.deployed().then(function (instance) {
       // send a 5 eth transaction from user test account to contract
       var account = web3.eth.accounts[4]
-      return instance.revoke({from: account})
+      return instance.revoke({ from: account })
         .then(assert.fail)
         .catch(function (error) {
           if (invalidOpCodeException(error)) {
@@ -145,9 +149,107 @@ contract('AuctusPreICO', function (accounts) {
     })
   })
 
+  it("Another user sending more 30 eth going over the max pre ico cap. Last user", function () {
+    return AuctusPreIco.deployed().then(function (instance) {
+      // send a 5 eth transaction from user test account to contract
+      var account = web3.eth.accounts[7]
+      return instance.sendTransaction({ from: account, value: web3.toWei(30, "ether") })
+        .then(function (tx) {
+          // check if the transaction succeeded
+          assert.isOk(tx.receipt)
+          return instance.balanceOf.call(account)
+            .then(function (balance) {
+              var agtBalance = web3.fromWei(balance).toNumber()
+              assert.equal(agtBalance, 30 * 2500, "wrong balance. Expected to have 75000 AGT.")
+            })
+        })
+    })
+  })
+
+  it("User trying to send eth after max pre ico cap reached by last user", function () {
+    return AuctusPreIco.deployed().then(function (instance) {
+      // send a 5 eth transaction from user test account to contract
+      var account = web3.eth.accounts[3]
+      return instance.sendTransaction({ from: account, value: web3.toWei(3, "ether") })
+        .then(assert.fail)
+        .catch(function (error) {
+          if (invalidOpCodeException(error)) {
+            assert(
+              true, 'max cap reached. Can\'t send more eth to contract.'
+            )
+          }
+          else {
+            unexceptedException(error)
+          }
+        })
+    })
+  })
+
+  // this one should be conditional
+  // it("Sending eth after ico max block limit", function () {
+  //   return AuctusPreIco.deployed().then(function (instance) {
+  //     // send a 5 eth transaction from user test account to contract
+  //     var account = web3.eth.accounts[4]
+  //     return instance.revoke({from: account})
+  //       .then(assert.fail)
+  //       .catch(function (error) {
+  //         if (invalidOpCodeException(error)) {
+  //           assert(
+  //             true, 'revoke not allowed yet'
+  //           )
+  //         }
+  //         else {
+  //           unexceptedException(error)
+  //         }
+  //       })
+  //   })
+  // })
+
+  it("User other than owner calling drain function after pre ico end", function () {
+    return AuctusPreIco.deployed().then(function (instance) {
+      // send a 5 eth transaction from user test account to contract
+      var account = web3.eth.accounts[2]
+      return instance.drain({ from: account })
+        .then(assert.fail)
+        .catch(function (error) {
+          if (invalidOpCodeException(error)) {
+            assert(
+              true, 'user not allowed to call drain function'
+            )
+          }
+          else {
+            unexceptedException(error)
+          }
+        })
+    })
+  })
+
+  it("Checking if total pre ico raised is equal to 48.00234559 eth", function () {
+    return AuctusPreIco.deployed().then(function (instance) {
+      // send a 5 eth transaction from user test account to contract
+      return instance.weiRaised()
+        .then(function (weiRaised) {
+          var numberRaised = web3.fromWei(weiRaised).toNumber()
+          assert.equal(numberRaised, 48.00234559, 'total raised eth not right')
+        })
+    })
+  })
 
 
-
+  it("Successfully calling drain function after pre ico end", function () {
+    return AuctusPreIco.deployed().then(function (instance) {
+      // send a 5 eth transaction from user test account to contract
+      var weiBalanceOwnerBeforeDrain = web3.eth.getBalance(web3.eth.accounts[0])
+      return instance.drain()
+        .then(function (tx) {
+          var weiBalanceAfterDrain = web3.eth.getBalance(web3.eth.accounts[0])
+          var numberBalanceAfterDrain = web3.fromWei(weiBalanceAfterDrain).toNumber()
+          
+          assert.isAtLeast(numberBalanceAfterDrain, 147.407, 'owner balance wrong after drain')
+          assert.isAtMost(numberBalanceAfterDrain, 147.408, 'owner balance wrong after drain')
+        })
+    })
+  })
 
 
   function goToBlockAtHeight(blockHeight) {
@@ -174,7 +276,7 @@ contract('AuctusPreICO', function (accounts) {
     assert(false, 'Unexcepted Exception: ' + error.toString())
   }
 
-  function invalidOpCodeException(error){
+  function invalidOpCodeException(error) {
     return error && error.toString().indexOf('invalid opcode') > -1
   }
 });
