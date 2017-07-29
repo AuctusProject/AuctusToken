@@ -84,12 +84,10 @@ contract VestedToken {
 		require(quantity > 0);
 		uint256 remaining = quantity;
 		uint256 attributionCount = tokenAttributionCount(from);
-		for(uint256 i = 0; i < attributionCount; i++) {
-			if (
-				balances[from][i].amount > 0 &&
+		for (uint256 i = 0; i < attributionCount; i++) {
+			if (balances[from][i].amount > 0 &&
 				(balances[from][i].useOnlyAfter == 0 ||
 				currentTime() > balances[from][i].useOnlyAfter) 
-				
 			) {
 				if (balances[from][i].amount >= remaining) {
 					balances[from][i].amount = balances[from][i].amount.minus(remaining);
@@ -121,7 +119,7 @@ contract Owner is VestedToken {
 	function transferOwnership(address newOwner) onlyOwner {
         ownerAddress = newOwner;
 		uint256 attributionCount = tokenAttributionCount(msg.sender);
-		for(uint256 i = 0; i < attributionCount; i++) {
+		for (uint256 i = 0; i < attributionCount; i++) {
 			if (balances[msg.sender][i].amount > 0) {
 				addAmount(newOwner, balances[msg.sender][i].amount, balances[msg.sender][i].useOnlyAfter);
 				balances[msg.sender][i].amount = 0;
@@ -146,12 +144,12 @@ contract AuctusIco is Owner {
 	bool public fundingHalted = false;
 	
 	uint256 public startBlock = 0;
-	uint64 public maxPeriod = 86400 * 15; //15 days after start block timestamp
+	uint64 public maxPeriod = 15 days; //15 days after start block timestamp
 	
 	uint256 public minCap = 20000 ether;
 	uint256 public targetCap = 80000 ether;
 	
-	uint64 public extraTimeAfterTargetReached = 86400; //24h after ether target reached
+	uint64 public extraTimeAfterTargetReached = 1 days; //24h after ether target reached
 	
 	uint256 public maxGasPrice = 50000000000; // 50 gwei
 	uint256 public blockAmount = 150; // Block amount to refresh limitations 
@@ -194,11 +192,11 @@ contract AuctusIco is Owner {
 	}
 	
 	function AuctusIco() {
-		bonusDistribution.push(Bonus(86400, 16)); // first day, 16%
-		bonusDistribution.push(Bonus(86400 * 3, 12)); // until third day, 12%
-		bonusDistribution.push(Bonus(86400 * 6, 8)); // until sixth day, 8%
-		bonusDistribution.push(Bonus(86400 * 9, 4)); // until ninth day, 4%
-		bonusDistribution.push(Bonus(86400 * 12, 2)); // until twelfth day, 2%
+		bonusDistribution.push(Bonus(1 days, 16)); // first day, 16%
+		bonusDistribution.push(Bonus(3 days, 12)); // until third day, 12%
+		bonusDistribution.push(Bonus(6 days, 8)); // until sixth day, 8%
+		bonusDistribution.push(Bonus(9 days, 4)); // until ninth day, 4%
+		bonusDistribution.push(Bonus(12 days, 2)); // until twelfth day, 2%
 	}
 	
 	function() 
@@ -207,24 +205,24 @@ contract AuctusIco is Owner {
 		isFundingNotHalted 
 	{
 		require(msg.value > 0 && tx.gasprice <= maxGasPrice);
-		
-		var (weiToInvest, weiRemaining) = getWeiValues();
-		assert(weiToInvest > 0);
-		
-		uint256 amount = getTokenAmount(weiToInvest);
-		addAmount(msg.sender, amount, 0);
-		amountShared = amountShared.plus(amount);
-		weiRaised = weiRaised.plus(weiToInvest);
-		
 		if (startTimestamp == 0) {
 			startTimestamp = currentTime();
+		}
+		var (weiToInvest, weiRemaining) = getWeiValues();
+		uint256 amount = 0;
+		if (weiToInvest > 0) {		
+			amount = getTokenAmount(weiToInvest);
+			addAmount(msg.sender, amount, 0);
+			amountShared = amountShared.plus(amount);
+			weiRaised = weiRaised.plus(weiToInvest);
 		}
 		if (weiRaised >= targetCap && targetReachedTimestamp == 0) {
 			targetReachedTimestamp = currentTime();
 		}
-		
 		require(weiRemaining == 0 || msg.sender.send(weiRemaining)); // TODO: Evaluate if is there a best way
-		Buy(msg.sender, amount);
+		if (amount > 0) {
+			Buy(msg.sender, amount);
+		}
 	}
 	
 	function revoke() icoFailed {
@@ -266,13 +264,13 @@ contract AuctusIco is Owner {
 	
 	function getTokenAmount(uint256 weiAmount) internal returns (uint256) {
 		uint256 bonusApplied = 0;
-		for(uint256 i = 0; i < bonusDistribution.length; i++) {
+		for (uint256 i = 0; i < bonusDistribution.length; i++) {
 			if (currentTime() <= (bonusDistribution[i].period + startTimestamp)) {
 				bonusApplied = bonusApplied.max(bonusDistribution[i].bonus);
 			}
 		}
-		uint256 price = basicPricePerEth * (100 + bonusApplied) / 100;
-		return weiAmount.times(price) / (1 ether);
+		uint256 price = basicPricePerEth.times(bonusApplied.plus(100)).divided(100);
+		return weiAmount.times(price).divided(1 ether);
 	}
 }
 
@@ -310,10 +308,10 @@ contract DistributionManagement is AuctusIco {
 	}
 	
 	function DistributionManagement() {
-		teamDistribution.push(VestedDistribution(86400 * 180, 16)); // 6 months, 25%
-		teamDistribution.push(VestedDistribution(86400 * 360, 16)); // 12 months, more 25%
-		teamDistribution.push(VestedDistribution(86400 * 540, 16)); // 18 months, more 25%
-		teamDistribution.push(VestedDistribution(86400 * 720, 16)); // 24 months, more 25%
+		teamDistribution.push(VestedDistribution(180 days, 25)); // 6 months, 25%
+		teamDistribution.push(VestedDistribution(360 days, 25)); // 12 months, more 25%
+		teamDistribution.push(VestedDistribution(540 days, 25)); // 18 months, more 25%
+		teamDistribution.push(VestedDistribution(720 days, 25)); // 24 months, more 25%
 	}
 	
 	function finishDistribution()
@@ -326,9 +324,8 @@ contract DistributionManagement is AuctusIco {
 		uint256 teamAmount = amountSold * 50 / 100 * teamPercentage / 100;
 		uint256 ownerAmount = amountSold * 50 / 100 * ownerPercentage / 100;
 		total = amountSold + teamAmount + ownerAmount;
-		
 		addAmount(ownerAddress, ownerAmount, 0);
-		for(uint256 i = 0; i < teamDistribution.length; i++) {
+		for (uint256 i = 0; i < teamDistribution.length; i++) {
 			addAmount(teamAddress, 
 					  teamAmount * teamDistribution[i].percentage / 100, 
 					  teamDistribution[i].period + currentTime());
@@ -370,13 +367,11 @@ contract DrainManagement is DistributionManagement {
 	
 	function DrainManagement() {
 		drainables.push(DrainInfo(drainImmediatePercentage, 0)); 
-		
-		uint64 month = (86400 * 30);
-		uint64 vestedPeriod = currentTime() + month;
+		uint64 vestedPeriod = currentTime() + (30 days);
 		uint256 drainQt = (100 - drainImmediatePercentage) / drainPercentagePerMonth;
-		for(uint256 i = 1; i <= drainQt; i++) {
+		for (uint256 i = 0; i < drainQt; i++) {
 			drainables.push(DrainInfo(drainPercentagePerMonth, vestedPeriod)); 
-			vestedPeriod = vestedPeriod + month;
+			vestedPeriod = vestedPeriod + (30 days);
 		}
 	}
 	
@@ -384,35 +379,10 @@ contract DrainManagement is DistributionManagement {
 		return alreadyDrained[who];
 	}
 	
-	function processFirstAddressDrain() 
-		onlyOwner 
-		distributionIsFinished 
+	function processDrain(address destination) 
+		onlyOwner
+		distributionIsFinished
 	{
-		processDrain(firstDrainAddress);
-	}
-	
-	function processSecondAddressDrain()
-		onlyOwner 
-		distributionIsFinished 
-	{
-		processDrain(secondDrainAddress);
-	}
-	
-	function processThirdAddressDrain()
-		onlyOwner 
-		distributionIsFinished 
-	{
-		processDrain(thirdDrainAddress);
-	}
-	
-	function processFourthAddressDrain() 
-		onlyOwner 
-		distributionIsFinished 
-	{
-		processDrain(fourthDrainAddress);
-	}
-	
-	function processDrain(address destination) internal {
 		uint256 percentageReleased = 0;
 		for (uint256 i = 0; i < drainables.length; i++) {
 			if (drainables[i].useOnlyAfter == 0 || currentTime() > drainables[i].useOnlyAfter) {
@@ -421,14 +391,23 @@ contract DrainManagement is DistributionManagement {
 		}
 		assert(percentageReleased > 0);
 		uint256 weiReleasedPerDrainAddress = weiRaised * percentageReleased / 100 / 4;
-		if (weiReleasedPerDrainAddress > this.balance) { // for security
+		if (weiReleasedPerDrainAddress > this.balance) { // for safety
 			weiReleasedPerDrainAddress = this.balance;
 		}
-		require(alreadyDrained[destination] < weiReleasedPerDrainAddress);
-		uint256 weiToBeDrained = weiReleasedPerDrainAddress - alreadyDrained[destination];
-		alreadyDrained[destination] = alreadyDrained[destination] + weiToBeDrained;
-		require(destination.send(weiToBeDrained));
-		Drain(destination, weiToBeDrained);
+		drainPerAddress(firstDrainAddress, weiReleasedPerDrainAddress);
+		drainPerAddress(secondDrainAddress, weiReleasedPerDrainAddress);
+		drainPerAddress(thirdDrainAddress, weiReleasedPerDrainAddress);
+		drainPerAddress(fourthDrainAddress, weiReleasedPerDrainAddress);
+	}
+
+	function drainPerAddress(address destination, uint256 weiReleased) internal {
+		if (alreadyDrained[destination] < weiReleased) {
+			uint256 weiToBeDrained = weiReleased - alreadyDrained[destination];
+			if (destination.send(weiToBeDrained)) {
+				alreadyDrained[destination] = alreadyDrained[destination] + weiToBeDrained;
+				Drain(destination, weiToBeDrained);
+			}
+		}
 	}
 }
 
@@ -468,6 +447,10 @@ contract Auctus is DrainManagement, ERC20 {
 	function balanceOf(address owner) constant returns (uint256) {
 		return balanceAt(owner, currentTime()); //TODO: Evaluate problems due block.number
 	}
+
+	function allowance(address owner, address spender) constant returns (uint256) {
+		return allowed[owner][spender];
+	}
 	
 	function burn(uint256 amount) distributionIsFinished {
 		burnToken(msg.sender, amount);
@@ -478,10 +461,6 @@ contract Auctus is DrainManagement, ERC20 {
 		burnToken(from, amount);
     }
 
-	function allowance(address owner, address spender) constant returns (uint256) {
-		return allowed[owner][spender];
-	}
-	
 	function transfer(address to, uint256 value) 
 		validPayload(2 * 32) 
 		distributionIsFinished
@@ -503,7 +482,11 @@ contract Auctus is DrainManagement, ERC20 {
 		return true;
 	}
 	
-	function approve(address spender, uint256 value) validPayload(2 * 32) returns (bool) {
+	function approve(address spender, uint256 value) 
+		validPayload(2 * 32) 
+		distributionIsFinished
+		returns (bool) 
+	{
 		require(value == 0 || allowed[msg.sender][spender] != 0); // TODO: Evaluate remove this restriction "mitigate the race condition" https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
 		allowed[msg.sender][spender] = value;
 		Approval(msg.sender, spender, value);
