@@ -36,10 +36,10 @@ contract AuctusPreSale {
 	}
 	
 	address public owner;
-	address public multiSigWallet = 0x0; //TODO: to be defined
+	address public multiSigWallet = 0xed62dbc89f22dae81013e48928ef4395fa19e51b;
 	
-	uint256 public startTime = 1507039200; //2017 October 3rd, 02:00 PM
-	uint256 public endTime = 1507298400; //2017 October 6th, 02:00 PM
+	uint256 public startTime = 1507039200; 
+	uint256 public endTime = 1507298400; 
 	
 	uint256 public minimumCap = 400 ether;
 	uint256 public maximumCap = 90000 ether;
