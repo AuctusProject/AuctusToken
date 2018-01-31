@@ -70,7 +70,7 @@ contract AuctusAlphaEscrow is ContractReceiver {
     }
 	
 	function tokenFallback(address from, uint256 value, bytes) public {
-		require(msg.sender == auctusAlphaTestnetToken);
+		require(msg.sender == auctusAlphaToken);
 		escrowed[from] = escrowed[from].add(value);
 		Escrow(from, value);
 	}

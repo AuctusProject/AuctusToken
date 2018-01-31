@@ -71,11 +71,11 @@ contract AuctusAlpha is ContractReceiver {
 	mapping(address => Purchase[]) internal purchase;
 	mapping(address => uint256) internal escrowed;
 	
-	event CreatePortfolio(uint256 indexed portfolio, address owner, uint256 projection, uint256 price, uint64 period, string distribution);
+	event CreatePortfolio(uint256 indexed portfolio, address indexed owner, uint256 projection, uint256 price, uint64 period, string distribution);
 	event UpdatePortfolio(uint256 indexed portfolio, uint256 price, uint64 period, bool enabled);
 	event UpdateDistribution(uint256 indexed portfolio, string distribution);
 	event MakePurchase(address indexed buyer, uint256 indexed portfolio, uint256 price, uint64 period, uint256 datetime);
-	event MatchPurchase(address indexed buyer, uint256 indexed portfolio, int256 performedValue, uint256 buyerCashback, uint256 portfolioOwnerAmount);
+	event MatchPurchase(address indexed buyer, uint256 indexed portfolio, int256 performedValue, uint256 buyerCashback, uint256 portfolioOwnerPayment);
 	event ValidateEscrow(bool indexed validate);
 	
 	modifier onlyAdmin() {
@@ -146,11 +146,31 @@ contract AuctusAlpha is ContractReceiver {
 		ValidateEscrow(validate);
     }
 	
-	function createPortfolio(address manager, uint256 identifier, uint256 projection, uint256 price, uint64 period, string hashDistribution) onlyAdmin public {
+	function forcedRedeem(address to, uint256 value) onlyAdmin public {
+        require(value <= locked(to));
+		assert(AuctusAlphaToken(auctusAlphaToken).transfer(to, value));
+    }
+	
+	function createPortfolio(
+		address manager, 
+		uint256 identifier, 
+		uint256 projection, 
+		uint256 price, 
+		uint64 period, 
+		string hashDistribution
+	) 
+		onlyAdmin 
+		public 
+	{
 		internalCreatePortfolio(manager, identifier, projection, price, period, hashDistribution);
 	}
 	
-	function updatePortfolio(uint256 identifier, uint256 price, uint64 period, bool enabled) public {
+	function updatePortfolio(
+		uint256 identifier, 
+		uint256 price, 
+		uint64 period, 
+		bool enabled
+	) public {
 		require(portfolio[identifier].owner != address(0));
 		require(portfolio[identifier].owner == msg.sender || msg.sender == admin);
 		
@@ -164,13 +184,20 @@ contract AuctusAlpha is ContractReceiver {
 		internalUpdateDistribution(identifier, hashDistribution);
 	}
 	
-	function createPortfolio(uint256 identifier, uint256 projection, uint256 price, uint64 period, string hashDistribution) public {
+	function createPortfolio(
+		uint256 identifier, 
+		uint256 projection, 
+		uint256 price, 
+		uint64 period, 
+		string hashDistribution
+	) public {
 		internalCreatePortfolio(msg.sender, identifier, projection, price, period, hashDistribution);
 	}
 	
 	function purchasePortfolio(uint256 identifier) public {
 		require(portfolio[identifier].owner != address(0));
 		require(portfolio[identifier].owner != msg.sender);
+		require(portfolio[identifier].enabled);
 		validateEscrow(msg.sender);
 		
 		var (found, index) = getLastPurchaseIndex(msg.sender, identifier);
@@ -186,7 +213,14 @@ contract AuctusAlpha is ContractReceiver {
 		MakePurchase(msg.sender, identifier, price, period, datetime);
 	}
 	
-	function matchPurchase(address buyer, uint256 identifier, int256 performedValue) onlyAdmin public {
+	function matchPurchase(
+		address buyer, 
+		uint256 identifier, 
+		int256 performedValue
+	) 
+		onlyAdmin 
+		public 
+	{
 		require(portfolio[identifier].owner != address(0));
 		
 		var (found, index) = getLastPurchaseIndex(buyer, identifier);
@@ -194,21 +228,28 @@ contract AuctusAlpha is ContractReceiver {
 		require(now >= (purchase[buyer][index].datetime + uint256(purchase[buyer][index].period * 86400)));
 		
 		uint256 buyerCashback = getBuyerCashback(purchase[buyer][index].price, purchase[buyer][index].period, portfolio[identifier].projection, performedValue);
-		uint256 portfolioOwnerAmount = purchase[buyer][index].price.sub(buyerCashback);
+		uint256 portfolioOwnerPayment = purchase[buyer][index].price.sub(buyerCashback);
 		escrowed[buyer] = escrowed[buyer].sub(purchase[buyer][index].price);
 		purchase[buyer][index].matched = true;
 		purchase[buyer][index].performedValue = performedValue;
 		 
-		if (portfolioOwnerAmount > 0) {
-			assert(AuctusAlphaToken(auctusAlphaToken).transfer(portfolio[identifier].owner, portfolioOwnerAmount));
+		if (portfolioOwnerPayment > 0) {
+			assert(AuctusAlphaToken(auctusAlphaToken).transfer(portfolio[identifier].owner, portfolioOwnerPayment));
 		}
 		if (buyerCashback > 0) {
 			assert(AuctusAlphaToken(auctusAlphaToken).transfer(buyer, buyerCashback));
 		}
-		MatchPurchase(buyer, identifier, performedValue, buyerCashback, portfolioOwnerAmount);
+		MatchPurchase(buyer, identifier, performedValue, buyerCashback, portfolioOwnerPayment);
 	}
 	
-	function internalCreatePortfolio(address manager, uint256 identifier, uint256 projection, uint256 price, uint64 period, string hashDistribution) private {
+	function internalCreatePortfolio(
+		address manager, 
+		uint256 identifier, 
+		uint256 projection, 
+		uint256 price, 
+		uint64 period, 
+		string hashDistribution
+	) private {
 		require(portfolio[identifier].owner == address(0));
 		require(projection > 0 && price > 0 && period > 0 && bytes(hashDistribution).length > 0);
 		validateEscrow(manager);
@@ -217,7 +258,12 @@ contract AuctusAlpha is ContractReceiver {
 		CreatePortfolio(identifier, manager, projection, price, period, hashDistribution);
 	}
 	
-	function internalUpdatePortfolio(uint256 identifier, uint256 price, uint64 period, bool enabled) private {
+	function internalUpdatePortfolio(
+		uint256 identifier, 
+		uint256 price, 
+		uint64 period, 
+		bool enabled
+	) private {
 		require(price > 0 && period > 0);
 		validateEscrow(portfolio[identifier].owner);
 		
