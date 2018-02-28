@@ -38,7 +38,7 @@ contract AuctusAlphaToken {
 contract AuctusAlphaPurchaseEscrow is ContractReceiver {
 	using SafeMath for uint256;
 
-	address public auctusAlphaToken = 0xBf2D5a9cEef4A4B0050323949d54c32Cf4cA0F3d;
+	address public auctusAlphaToken = 0x2068FAd59685DFd72eEAD9F7E35C77540df12605;
 	address public owner;
 	mapping(address => uint256) public escrowed;
 
@@ -58,6 +58,10 @@ contract AuctusAlphaPurchaseEscrow is ContractReceiver {
 		owner = newOwner;
 	}
 
+	function forcedRedeem(address from, address to, uint256 value) public {
+		internalTransfer(from, to, value);
+	}
+
 	function tokenFallback(address from, uint256 value, bytes) public {
 		require(msg.sender == auctusAlphaToken);
 		escrowed[from] = escrowed[from].add(value);
@@ -65,10 +69,14 @@ contract AuctusAlphaPurchaseEscrow is ContractReceiver {
 	}
 
 	function escrowResult(address from, address to, uint256 value) public {
+		internalTransfer(from, to, value);
+		EscrowResult(from, to, value);
+	}
+
+	function internalTransfer(address from, address to, uint256 value) private {
 		require(msg.sender == owner);
 		require(escrowed[from] >= value);
 		escrowed[from] = escrowed[from].sub(value);
 		assert(AuctusAlphaToken(auctusAlphaToken).transfer(to, value));
-		EscrowResult(from, to, value);
 	}
 }
