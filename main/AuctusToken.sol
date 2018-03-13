@@ -185,7 +185,7 @@ contract AuctusToken is EthereumStandards {
 	}
 
 	function internalTransfer(address from, address to, uint256 value) private {
-		require(tokenSaleIsFinished);
+		require(tokenSaleIsFinished || from == tokenSaleContract);
 		balances[from] = balances[from].sub(value);
 		balances[to] = balances[to].add(value);
 	}
