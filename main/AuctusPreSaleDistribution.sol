@@ -30,7 +30,7 @@ contract ContractReceiver {
 }
 
 
-contract AuctusPreSaleDistribution {
+contract AuctusPreSaleDistribution is ContractReceiver {
 	using SafeMath for uint256;
 
 	address public auctusTokenAddress = 0x0;

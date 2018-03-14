@@ -6,18 +6,21 @@ contract AuctusWhitelist {
 	uint256 public timeThatFinishGuaranteedPeriod = 1522245600; //2018-03-28 2 PM UTC
 	uint256 public maximumValueAfterGuaranteedPeriod = 15000 ether; //too high value
 	uint256 public maximumValueDuringGuaranteedPeriod;
+	uint256 public maximumValueWithoutProofOfAddress;
 
 	mapping(address => WhitelistInfo) public whitelist;
 
 	struct WhitelistInfo {
-		address _address;
+		bool _whitelisted;
+		bool _unlimited;
 		bool _doubleValue;
 		bool _shouldWaitGuaranteedPeriod;
 	}
 
-	function AuctusWhitelist(uint256 maximumValue) public {
+	function AuctusWhitelist(uint256 maximumValueToGuaranteedPeriod, uint256 maximumValueForProofOfAddress) public {
 		owner = msg.sender;
-		maximumValueDuringGuaranteedPeriod = maximumValue;
+		maximumValueDuringGuaranteedPeriod = maximumValueToGuaranteedPeriod;
+		maximumValueWithoutProofOfAddress = maximumValueForProofOfAddress;
 	}
 
 	modifier onlyOwner() {
@@ -35,14 +38,19 @@ contract AuctusWhitelist {
 		maximumValueDuringGuaranteedPeriod = maximumValue;
 	}
 
-	function listAddresses(bool doubleValue, bool shouldWait, address[] _addresses) onlyOwner public {
+	function changeMaximumValueWithoutProofOfAddress(uint256 maximumValue) onlyOwner public {
+		require(maximumValue > 0);
+		maximumValueWithoutProofOfAddress = maximumValue;
+	}
+
+	function listAddresses(bool whitelisted, bool unlimited, bool doubleValue, bool shouldWait, address[] _addresses) onlyOwner public {
 		for (uint256 i = 0; i < _addresses.length; i++) {
-			whitelist[_addresses[i]] = WhitelistInfo(_addresses[i], doubleValue, shouldWait);
+			whitelist[_addresses[i]] = WhitelistInfo(whitelisted, unlimited, doubleValue, shouldWait);
 		}
 	}
 
 	function getAllowedAmountToContribute(address addr) view public returns(uint256) {
-		if (whitelist[addr]._address != addr) {
+		if (!whitelist[addr]._whitelisted) {
 			return 0;
 		} else if (now <= timeThatFinishGuaranteedPeriod) {
 			if (whitelist[addr]._shouldWaitGuaranteedPeriod) {
@@ -55,7 +63,11 @@ contract AuctusWhitelist {
 				}
 			}
 		} else {
-			return maximumValueAfterGuaranteedPeriod;
+			if (whitelist[addr]._unlimited) {
+				return maximumValueAfterGuaranteedPeriod;
+			} else {
+				return maximumValueWithoutProofOfAddress;
+			}
 		}
 	}
 }

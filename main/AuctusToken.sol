@@ -63,13 +63,10 @@ contract AuctusToken is EthereumStandards {
 		_;
 	}
 
-	function AuctusToken(uint256 maximumSupply) public {
+	function AuctusToken() public {
 		contractOwner = msg.sender;
 		tokenSaleContract = address(0);
 		tokenSaleIsFinished = false;
-		totalSupply = maximumSupply;
-		balances[msg.sender] = maximumSupply;
-		emit Transfer(0x0, msg.sender, maximumSupply);
 	}
 
 	function balanceOf(address who) public constant returns (uint256) {
@@ -155,20 +152,17 @@ contract AuctusToken is EthereumStandards {
 
 	function transferOwnership(address newOwner) onlyOwner public {
 		require(newOwner != address(0));
-		balances[newOwner] = balances[contractOwner];
-		balances[contractOwner] = 0;
 		contractOwner = newOwner;
-		emit Transfer(contractOwner, newOwner, balances[newOwner]);
 	}
 
-	function setTokenSale(address tokenSale) onlyOwner public {
+	function setTokenSale(address tokenSale, uint256 maximumSupply) onlyOwner public {
 		require(tokenSaleContract == address(0));
 		tokenSaleContract = tokenSale;
-		balances[tokenSale] = balances[contractOwner];
-		balances[contractOwner] = 0;
+		totalSupply = maximumSupply;
+		balances[tokenSale] = maximumSupply;
 		bytes memory empty;
-		callTokenFallback(tokenSale, balances[tokenSale], empty);
-		emit Transfer(contractOwner, tokenSale, balances[tokenSale]);
+		callTokenFallback(0x0, maximumSupply, empty);
+		emit Transfer(0x0, tokenSale, maximumSupply);
 	}
 
 	function setTokenSaleFinished() public {

@@ -25,7 +25,7 @@ contract AuctusToken {
 }
 
 
-contract AuctusBountyDistribution {
+contract AuctusBountyDistribution is ContractReceiver {
 	using SafeMath for uint256;
 
 	address public auctusTokenAddress = 0x0;
