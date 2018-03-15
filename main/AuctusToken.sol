@@ -103,20 +103,12 @@ contract AuctusToken is EthereumStandards {
 	function transferFrom(address from, address to, uint256 value) public returns (bool) {
 		allowed[from][msg.sender] = allowed[from][msg.sender].sub(value);
 		internalTransfer(from, to, value);
-		if (isContract(to)) {
-			bytes memory empty;
-			callTokenFallback(to, from, value, empty);
-		}
 		emit Transfer(from, to, value);
 		return true;
 	}
 
 	function transfer(address to, uint256 value) public returns (bool) {
 		internalTransfer(msg.sender, to, value);
-		if (isContract(to)) {
-			bytes memory empty;
-			callTokenFallback(to, msg.sender, value, empty);
-		}
 		emit Transfer(msg.sender, to, value);
 		return true;
 	}

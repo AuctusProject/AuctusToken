@@ -32,6 +32,7 @@ contract ContractReceiver {
 
 contract AuctusToken {
 	function transfer(address to, uint256 value) public returns (bool);
+	function transfer(address to, uint256 value, bytes data) public returns (bool);
 	function burn(uint256 value) public returns (bool);
 	function setTokenSaleFinished() public;
 }
@@ -117,8 +118,8 @@ contract AuctusTokenSale is ContractReceiver {
 		openSale
 		public
 	{
-	    uint256 weiToInvest;
-	    uint256 weiRemaining;
+		uint256 weiToInvest;
+		uint256 weiRemaining;
 		(weiToInvest, weiRemaining) = getValueToInvest();
 
 		require(weiToInvest > 0);
@@ -131,7 +132,7 @@ contract AuctusTokenSale is ContractReceiver {
 		if (weiRemaining > 0) {
 			msg.sender.transfer(weiRemaining);
 		}
-		AuctusToken(auctusTokenAddress).transfer(msg.sender, tokensToReceive);
+		assert(AuctusToken(auctusTokenAddress).transfer(msg.sender, tokensToReceive));
 
 		emit Buy(msg.sender, tokensToReceive);
 	}
@@ -156,7 +157,7 @@ contract AuctusTokenSale is ContractReceiver {
 		uint256 vestedEthers = address(this).balance - freeEthers;
 
 		address(0x0).transfer(freeEthers); //Auctus multi signed wallet
-		address(0x0).transfer(vestedEthers); //MultiSigWalletWithVesting SC
+		address(0x0).transfer(vestedEthers); //AuctusEtherVesting SC
 
 		AuctusToken token = AuctusToken(auctusTokenAddress);
 		token.setTokenSaleFinished();
@@ -190,30 +191,43 @@ contract AuctusTokenSale is ContractReceiver {
 	}
 
 	function setTokenSaleDistribution(uint256 totalAmount) private {
-		//Auctus core team (TokenVesting SC) 20%
+		//Auctus core team 20%
 		uint256 auctusCoreTeam = totalAmount * 20 / 100;
-		//Bounty (AuctusBountyDistribution SC) 2%
+		//Bounty 2%
 		uint256 bounty = totalAmount * 2 / 100;
 		//Reserve for Future 18%
 		uint256 reserveForFuture = totalAmount * 18 / 100;
 		//Partnerships and Advisory free amount 1.8%
 		uint256 partnershipsAdvisoryFree = totalAmount * 18 / 1000;
-		//Partnerships and Advisory free amount 7.2%
+		//Partnerships and Advisory vested amount 7.2%
 		uint256 partnershipsAdvisoryVested = totalAmount * 72 / 1000;
 
 		uint256 privateSales = 0;
 		uint256 preSale = 2397307557007329968290000;
 
-		AuctusToken token = AuctusToken(auctusTokenAddress);
-		token.transfer(0x0, auctusCoreTeam); //AuctusTokenVesting SC
-		token.transfer(0x0, bounty); //AuctusBountyDistribution SC
-		token.transfer(0x0, reserveForFuture); //AuctusTokenVesting SC
-		token.transfer(0x0, preSale); //AuctusPreSaleDistribution SC
-		token.transfer(0x0, partnershipsAdvisoryVested); //AuctusTokenVesting SC
-		token.transfer(0x0, partnershipsAdvisoryFree);
-		token.transfer(0x0, privateSales);
+		transferTokens(auctusCoreTeam, bounty, reserveForFuture, preSale, partnershipsAdvisoryVested, partnershipsAdvisoryFree, privateSales);
 		
-		remainingTokens = totalAmount - auctusCoreTeam - bounty - reserveForFuture - partnershipsAdvisoryFree - partnershipsAdvisoryVested - privateSales - preSale;
+		remainingTokens = totalAmount - auctusCoreTeam - bounty - reserveForFuture - preSale - partnershipsAdvisoryVested - partnershipsAdvisoryFree - privateSales;
 		saleWasSet = true;
+	}
+	
+	function transferTokens(
+		uint256 auctusCoreTeam,
+		uint256 bounty,
+		uint256 reserveForFuture,
+		uint256 preSale,
+		uint256 partnershipsAdvisoryVested,
+		uint256 partnershipsAdvisoryFree,
+		uint256 privateSales
+	) private {
+		AuctusToken token = AuctusToken(auctusTokenAddress);
+		bytes memory empty;
+		assert(token.transfer(0x0, auctusCoreTeam, empty)); //AuctusTokenVesting SC
+		assert(token.transfer(0x0, bounty, empty)); //AuctusBountyDistribution SC
+		assert(token.transfer(0x0, reserveForFuture, empty)); //AuctusTokenVesting SC
+		assert(token.transfer(0x0, preSale, empty)); //AuctusPreSaleDistribution SC
+		assert(token.transfer(0x0, partnershipsAdvisoryVested, empty)); //AuctusTokenVesting SC
+		assert(token.transfer(0x0, partnershipsAdvisoryFree));
+		assert(token.transfer(0x0, privateSales));
 	}
 }
