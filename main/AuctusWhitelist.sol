@@ -57,7 +57,12 @@ contract AuctusWhitelist {
 				return 0;
 			} else {
 				if (whitelist[addr]._doubleValue) {
-					return (maximumValueDuringGuaranteedPeriod * 2);
+					uint256 amount = maximumValueDuringGuaranteedPeriod * 2;
+					if (whitelist[addr]._unlimited || amount < maximumValueWithoutProofOfAddress) {
+						return amount;
+					} else {
+						return maximumValueWithoutProofOfAddress;
+					}
 				} else {
 					return maximumValueDuringGuaranteedPeriod;
 				}
