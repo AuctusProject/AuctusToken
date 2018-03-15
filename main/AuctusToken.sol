@@ -105,7 +105,7 @@ contract AuctusToken is EthereumStandards {
 		internalTransfer(from, to, value);
 		if (isContract(to)) {
 			bytes memory empty;
-			callTokenFallback(to, value, empty);
+			callTokenFallback(to, from, value, empty);
 		}
 		emit Transfer(from, to, value);
 		return true;
@@ -115,7 +115,7 @@ contract AuctusToken is EthereumStandards {
 		internalTransfer(msg.sender, to, value);
 		if (isContract(to)) {
 			bytes memory empty;
-			callTokenFallback(to, value, empty);
+			callTokenFallback(to, msg.sender, value, empty);
 		}
 		emit Transfer(msg.sender, to, value);
 		return true;
@@ -124,7 +124,7 @@ contract AuctusToken is EthereumStandards {
 	function transfer(address to, uint256 value, bytes data) public returns (bool) {
 		internalTransfer(msg.sender, to, value);
 		if (isContract(to)) {
-			callTokenFallback(to, value, data);
+			callTokenFallback(to, msg.sender, value, data);
 		}
 		emit Transfer(msg.sender, to, value, data);
 		return true;
@@ -161,7 +161,7 @@ contract AuctusToken is EthereumStandards {
 		totalSupply = maximumSupply;
 		balances[tokenSale] = maximumSupply;
 		bytes memory empty;
-		callTokenFallback(0x0, maximumSupply, empty);
+		callTokenFallback(tokenSale, 0x0, maximumSupply, empty);
 		emit Transfer(0x0, tokenSale, maximumSupply);
 	}
 
@@ -179,7 +179,7 @@ contract AuctusToken is EthereumStandards {
 	}
 
 	function internalTransfer(address from, address to, uint256 value) private {
-		require(tokenSaleIsFinished || from == tokenSaleContract);
+		require(canTransfer(from));
 		balances[from] = balances[from].sub(value);
 		balances[to] = balances[to].add(value);
 	}
@@ -190,8 +190,11 @@ contract AuctusToken is EthereumStandards {
 		emit Burn(from, value);
 	}
 
-	function callTokenFallback(address to, uint256 value, bytes data) private {
-		ContractReceiver receiver = ContractReceiver(to);
-		receiver.tokenFallback(msg.sender, value, data);
+	function callTokenFallback(address to, address from, uint256 value, bytes data) private {
+		ContractReceiver(to).tokenFallback(from, value, data);
+	}
+
+	function canTransfer(address from) private view returns (bool) {
+		return (tokenSaleIsFinished || from == tokenSaleContract);
 	}
 }
