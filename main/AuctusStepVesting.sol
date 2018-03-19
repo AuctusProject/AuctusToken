@@ -47,7 +47,7 @@ contract AuctusStepVesting {
 	* @param _cliff duration in seconds of the cliff in which will begin to vest and between the steps
 	* @param _steps total number of steps to release all the balance
 	*/
-	function AuctusVesting(address _beneficiary, uint256 _start, uint256 _cliff, uint256 _steps) public {
+	function AuctusStepVesting(address _beneficiary, uint256 _start, uint256 _cliff, uint256 _steps) public {
 		require(_beneficiary != address(0));
 		require(_steps > 0);
 
@@ -102,7 +102,7 @@ contract AuctusStepVesting {
 		}
 	}
 
-	function totalControlledBalance() public pure returns (uint256) {
+	function totalControlledBalance() public view returns (uint256) {
 		return remainingAmount.add(releasedAmount);
 	}
 }
