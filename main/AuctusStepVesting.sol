@@ -69,7 +69,11 @@ contract AuctusStepVesting {
 
 		releasedAmount = releasedAmount.add(unreleased);
 		remainingAmount = remainingAmount.sub(unreleased);
-		releasedSteps = releasedSteps + 1;
+		if (remainingAmount == 0) {
+			releasedSteps = steps;
+		} else {
+			releasedSteps = releasedSteps + 1;
+		}
 
 		transfer(unreleased);
 
