@@ -54,6 +54,7 @@ contract AuctusToken is EthereumStandards {
 
 	address public contractOwner;
 	address public tokenSaleContract;
+	address public preSaleDistributionContract;
 	bool public tokenSaleIsFinished;
 
 	event Burn(address indexed from, uint256 value);
@@ -147,8 +148,9 @@ contract AuctusToken is EthereumStandards {
 		contractOwner = newOwner;
 	}
 
-	function setTokenSale(address tokenSale, uint256 maximumSupply) onlyOwner public {
+	function setTokenSale(address tokenSale, address preSaleDistribution, uint256 maximumSupply) onlyOwner public {
 		require(tokenSaleContract == address(0));
+		preSaleDistributionContract = preSaleDistribution;
 		tokenSaleContract = tokenSale;
 		totalSupply = maximumSupply;
 		balances[tokenSale] = maximumSupply;
@@ -187,6 +189,6 @@ contract AuctusToken is EthereumStandards {
 	}
 
 	function canTransfer(address from) private view returns (bool) {
-		return (tokenSaleIsFinished || from == tokenSaleContract);
+		return (tokenSaleIsFinished || from == tokenSaleContract || from == preSaleDistributionContract);
 	}
 }

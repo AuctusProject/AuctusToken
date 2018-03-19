@@ -149,7 +149,7 @@ contract AuctusTokenVesting is AuctusStepVesting, ContractReceiver {
 	}
 
 	function tokenFallback(address from, uint256 value, bytes) public {
-		require(from == auctusTokenAddress);
+		require(msg.sender == auctusTokenAddress);
 		remainingAmount = remainingAmount.add(value);
 	}
 }
