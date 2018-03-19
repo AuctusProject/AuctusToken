@@ -9,6 +9,7 @@ contract AuctusWhitelist {
 	uint256 public maximumValueWithoutProofOfAddress;
 
 	mapping(address => WhitelistInfo) public whitelist;
+	mapping(address => bool) public canListAddress;
 
 	struct WhitelistInfo {
 		bool _whitelisted;
@@ -19,6 +20,7 @@ contract AuctusWhitelist {
 
 	function AuctusWhitelist(uint256 maximumValueToGuaranteedPeriod, uint256 maximumValueForProofOfAddress) public {
 		owner = msg.sender;
+		canListAddress[msg.sender] = true;
 		maximumValueDuringGuaranteedPeriod = maximumValueToGuaranteedPeriod;
 		maximumValueWithoutProofOfAddress = maximumValueForProofOfAddress;
 	}
@@ -43,7 +45,14 @@ contract AuctusWhitelist {
 		maximumValueWithoutProofOfAddress = maximumValue;
 	}
 
-	function listAddresses(bool whitelisted, bool unlimited, bool doubleValue, bool shouldWait, address[] _addresses) onlyOwner public {
+	function setAddressesThatCanList(bool canList, address[] _addresses) onlyOwner public {
+		for (uint256 i = 0; i < _addresses.length; i++) {
+			canListAddress[_addresses[i]] = canList;
+		}
+	}
+
+	function listAddresses(bool whitelisted, bool unlimited, bool doubleValue, bool shouldWait, address[] _addresses) public {
+		require(canListAddress[msg.sender]);
 		for (uint256 i = 0; i < _addresses.length; i++) {
 			whitelist[_addresses[i]] = WhitelistInfo(whitelisted, unlimited, doubleValue, shouldWait);
 		}
