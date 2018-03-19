@@ -57,7 +57,7 @@ contract AuctusStepVesting {
 		steps = _steps;
 	}
 
-	function transfer(uint256 amount) public;
+	function transfer(uint256 amount) internal;
 
 	/**
 	* @notice Transfers vested tokens to beneficiary.
@@ -115,7 +115,7 @@ contract AuctusEtherVesting is AuctusStepVesting {
 	{
 	}
 
-	function transfer(uint256 amount) public {
+	function transfer(uint256 amount) internal {
 		beneficiary.transfer(amount);
 	}
 
@@ -144,7 +144,7 @@ contract AuctusTokenVesting is AuctusStepVesting, ContractReceiver {
 	{
 	}
 
-	function transfer(uint256 amount) public {
+	function transfer(uint256 amount) internal {
 		assert(AuctusToken(auctusTokenAddress).transfer(beneficiary, amount));
 	}
 
