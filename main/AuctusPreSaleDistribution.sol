@@ -36,6 +36,7 @@ contract AuctusPreSaleDistribution is ContractReceiver {
 	address public auctusTokenAddress = 0x0;
 	address public auctusPreSaleAddress = 0x84D45E60f7036F0DE7dF8ed68E1Ee50471B963BA;
 	uint256 public escrowedTokens;
+	address public owner;
 	mapping(address => bool) public redeemed;
 
 	event Escrow(address indexed from, uint256 value);
