@@ -157,7 +157,7 @@ contract AuctusTokenSale is ContractReceiver {
 		uint256 vestedEthers = address(this).balance - freeEthers;
 
 		address(0x0).transfer(freeEthers); //Auctus multi signed wallet
-		assert(address(0x0).call.value(vestedEthers)(bytes4(keccak256("deposit()")))); //AuctusEtherVesting SC
+		assert(address(0x0).call.value(vestedEthers)()); //AuctusEtherVesting SC
 
 		AuctusToken token = AuctusToken(auctusTokenAddress);
 		token.setTokenSaleFinished();

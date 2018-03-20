@@ -119,7 +119,7 @@ contract AuctusEtherVesting is AuctusStepVesting {
 		beneficiary.transfer(amount);
 	}
 
-	function deposit() payable public {
+	function () payable public {
 		remainingAmount = remainingAmount.add(msg.value);
 	}
 }
