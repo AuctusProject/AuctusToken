@@ -50,6 +50,7 @@ contract AuctusStepVesting {
 	function AuctusStepVesting(address _beneficiary, uint256 _start, uint256 _cliff, uint256 _steps) public {
 		require(_beneficiary != address(0));
 		require(_steps > 0);
+		require(_cliff > 0);
 
 		beneficiary = _beneficiary;
 		cliff = _cliff;
