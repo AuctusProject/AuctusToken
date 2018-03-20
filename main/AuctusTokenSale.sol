@@ -50,7 +50,7 @@ contract AuctusTokenSale is ContractReceiver {
 	address public auctusWhiteListAddress = 0x0;
 
 	uint256 public startTime = 1522159200; //2018-03-27 2 PM UTC
-	uint256 public endTime = 1522504800; //2018-03-31 2 PM UTC
+	uint256 public endTime; 
 
 	uint256 public basicPricePerEth = 2000;
 
@@ -66,9 +66,10 @@ contract AuctusTokenSale is ContractReceiver {
 	event Buy(address indexed buyer, uint256 tokenAmount);
 	event Revoke(address indexed buyer, uint256 investedAmount);
 
-	function AuctusTokenSale(uint256 minimumCap) public {
+	function AuctusTokenSale(uint256 minimumCap, uint256 endSaleTime) public {
 		owner = msg.sender;
 		softCap = minimumCap;
+		endTime = endSaleTime;
 		saleWasSet = false;
 		tokenSaleHalted = false;
 	}
@@ -105,6 +106,11 @@ contract AuctusTokenSale is ContractReceiver {
 	function setSoftCap(uint256 minimumCap) onlyOwner public {
 		require(now < startTime);
 		softCap = minimumCap;
+	}
+
+	function setEndSaleTime(uint256 endSaleTime) onlyOwner public {
+		require(now < endTime);
+		endTime = endSaleTime;
 	}
 
 	function tokenFallback(address, uint256 value, bytes) public {
