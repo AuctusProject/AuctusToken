@@ -43,27 +43,31 @@ contract ContractReceiver {
 contract AuctusBonusDistribution is ContractReceiver {
 	using SafeMath for uint256;
 
-	address public auctusTokenAddress = 0xc12d099be31567add4e4e4d0d45691c3f58f5663;
+	address public auctusTokenAddress = 0xc12d099be31567add4e4e4d0D45691C3F58f5663;
 	address public auctusPreSaleAddress = 0x84D45E60f7036F0DE7dF8ed68E1Ee50471B963BA;
 	uint256 public escrowedTokens;
-	address public owner;
+	mapping(address => bool) public authorized;
 	mapping(address => bool) public redeemed;
 
 	event Escrow(address indexed from, uint256 value);
 	event Redeem(address indexed to, uint256 value);
 
-	function AuctusBonusDistribution() public {
-		owner = msg.sender;
-	}
-
-	modifier onlyOwner() {
-		require(owner == msg.sender);
+	modifier isAuthorized() {
+		require(authorized[msg.sender]);
 		_;
 	}
 
-	function transferOwnership(address newOwner) onlyOwner public {
-		require(newOwner != address(0));
-		owner = newOwner;
+	function AuctusBonusDistribution() public {
+		authorized[msg.sender] = true;
+	}
+
+	function setAuthorization(address _address, bool _authorized) isAuthorized public {
+		require(_address != address(0) && _address != msg.sender);
+		authorized[_address] = _authorized;
+	}
+
+	function drainAUC(uint256 value) isAuthorized public {
+		assert(AuctusToken(auctusTokenAddress).transfer(msg.sender, value));
 	}
 
 	function tokenFallback(address from, uint256 value, bytes) public {
@@ -72,32 +76,33 @@ contract AuctusBonusDistribution is ContractReceiver {
 		emit Escrow(from, value);
 	}
 
-	function sendPreSaleBonusMany(address[] _addresses) onlyOwner public {
+	function sendPreSaleBonusMany(address[] _addresses) isAuthorized public {
 		for (uint256 i = 0; i < _addresses.length; i++) {
 			sendPreSaleBonus(_addresses[i]);
 		}
 	}
-	
+
 	function sendPreSaleBonus(address _address) public returns (bool) {
 		if (!redeemed[_address]) {
 			uint256 value = AuctusPreSale(auctusPreSaleAddress).getTokenAmount(_address).mul(12).div(100);
 			if (value > 0) {
-			    redeemed[_address] = true;
-			    sendBonus(_address, value);
+				redeemed[_address] = true;
+				sendBonus(_address, value);
+				return true;
 			}
 		}
 		return false;
 	}
-	
-	function sendBonusMany(address[] _addresses, uint256[] _values) onlyOwner public {
+
+	function sendBonusMany(address[] _addresses, uint256[] _values) isAuthorized public {
 		for (uint256 i = 0; i < _addresses.length; i++) {
 			sendBonus(_addresses[i], _values[i]);
 		}
 	}
-	
-	function sendBonus(address _address, uint256 value) internal{
+
+	function sendBonus(address _address, uint256 value) internal {
 		escrowedTokens = escrowedTokens.sub(value);
 		assert(AuctusToken(auctusTokenAddress).transfer(_address, value));
 		emit Redeem(_address, value);
-	}	
+	}
 }
